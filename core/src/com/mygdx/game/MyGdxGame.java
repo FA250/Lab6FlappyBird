@@ -3,34 +3,49 @@ package com.mygdx.game;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputAdapter;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.Circle;
+import com.badlogic.gdx.math.Intersector;
+import com.badlogic.gdx.math.Rectangle;
+
+import java.lang.reflect.Type;
+import java.util.Random;
 
 public class MyGdxGame extends ApplicationAdapter {
 	SpriteBatch batch;
-	Texture background;
-	Texture bird, bird2;
+	Texture background,bird, bird2, gameOver;
 	Texture[] pipesUp, pipesDown;
-	int positionBirdX, positionBirdY, timeCountBirdWingsUpdate, timeCountBirdFallUpdate,timeCountUpdatePipes, updateRate, birdFallRate, currentTubeCount;
-	boolean flagChangeImageBird=true, flagDrawPipes[];
-	
+	int [] positionPipeX, positionBottomPipeY, positionTopPipeY;
+	int positionBirdX, positionBirdY, timeCountBirdWingsUpdate, timeCountBirdFallUpdate,timeCountUpdatePipes, pipesUpdateRate, birdFallRate, currentTubeCount, distanceBetweenPipes,gapBetweenTopBottomPipe;
+	int heightScreen,widthScreen, pipeDownHeight, pipeDownWidth,pipeUpHeight,pipeUpWidth, birdRadius;
+	boolean flagChangeImageBird=true, flagDrawPipes[], firstTime, hasentLose, playGame;
+	Circle collisionBird;
+	Rectangle[] collisionPipeUp, collisionPipeDown;
+
+
 	@Override
 	public void create () {
+		heightScreen=Gdx.graphics.getHeight();
+		widthScreen=Gdx.graphics.getWidth();
 		batch = new SpriteBatch();
 		background = new Texture("bg.png");
 		bird = new Texture("bird.png");
 		bird2 = new Texture("bird2.png");
 		pipesUp = new Texture[]{new Texture("bottomtube.png"), new Texture("bottomtube.png"), new Texture("bottomtube.png"), new Texture("bottomtube.png")};
 		pipesDown = new Texture[]{new Texture("toptube.png"),new Texture("toptube.png"),new Texture("toptube.png"),new Texture("toptube.png")};
-		positionBirdX=(Gdx.graphics.getWidth() / 2)-(bird.getWidth()/2);
-		positionBirdY=(Gdx.graphics.getHeight() / 2)-(bird.getHeight()/2);
-		timeCountBirdWingsUpdate=0;
-		timeCountBirdFallUpdate=0;
-		timeCountUpdatePipes=0;
-		updateRate=50;
-		birdFallRate=14;
-		currentTubeCount=0;
+		gameOver= new Texture("game_over.png");
+
+		pipeDownHeight=pipesDown[0].getHeight();
+		pipeDownWidth=pipesUp[0].getWidth();
+		pipeUpHeight=pipesUp[0].getHeight();
+		pipeUpWidth=pipesDown[0].getWidth();
+		birdRadius=bird.getWidth()/2;
+
+		resetGame();
 	}
 
 	@Override
@@ -38,46 +53,146 @@ public class MyGdxGame extends ApplicationAdapter {
 		Gdx.gl.glClearColor(1f, 1f, 1f, 1f);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 		batch.begin();
-		batch.draw(background, 0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-		if (flagChangeImageBird) {
-			batch.draw(bird2, positionBirdX, positionBirdY);
-		} else {
-			batch.draw(bird, positionBirdX, positionBirdY);
+		batch.draw(background, 0, 0, widthScreen, heightScreen);
+
+		if(hasentLose && playGame) {
+			if (flagChangeImageBird) {
+				batch.draw(bird2, positionBirdX, positionBirdY);
+			} else {
+				batch.draw(bird, positionBirdX, positionBirdY);
+			}
+
+
+			batch.draw(pipesDown[0], positionPipeX[0], positionTopPipeY[0]);
+			batch.draw(pipesDown[1], positionPipeX[1], positionTopPipeY[1]);
+			batch.draw(pipesDown[2], positionPipeX[2], positionTopPipeY[2]);
+			batch.draw(pipesDown[3], positionPipeX[3], positionTopPipeY[3]);
+
+			batch.draw(pipesUp[0], positionPipeX[0], positionBottomPipeY[0]);
+			batch.draw(pipesUp[1], positionPipeX[1], positionBottomPipeY[1]);
+			batch.draw(pipesUp[2], positionPipeX[2], positionBottomPipeY[2]);
+			batch.draw(pipesUp[3], positionPipeX[3], positionBottomPipeY[3]);
+
+			collisionBird.x=positionBirdX+birdRadius; collisionBird.y = positionBirdY+birdRadius;
+
+
+			for(int i=0; i<collisionPipeUp.length;i++){
+			    collisionPipeDown[i].x=positionPipeX[i];
+                collisionPipeDown[i].y=positionTopPipeY[i];
+                collisionPipeUp[i].x=positionPipeX[i];
+                collisionPipeUp[i].y=positionBottomPipeY[i];
+
+				if(Intersector.overlaps(collisionBird,collisionPipeDown[i])||Intersector.overlaps(collisionBird,collisionPipeUp[i]))
+					hasentLose=false;
+			}
+
+			if(positionBirdY>heightScreen-bird.getHeight()||positionBirdY<0)
+				hasentLose=false;
+
+			if (Gdx.input.justTouched()) {
+				timeCountBirdWingsUpdate = 0;
+				timeCountBirdFallUpdate = 0;
+				birdFallRate = 14;
+				positionBirdY += 65;
+				if (flagChangeImageBird)
+					flagChangeImageBird = false;
+				else
+					flagChangeImageBird = true;
+			}
+
+			if (timeCountBirdWingsUpdate++ == 20) {
+				flagChangeImageBird = false;
+				timeCountBirdWingsUpdate = 0;
+			}
+
+			if (timeCountBirdFallUpdate++ == birdFallRate) {
+				flagChangeImageBird = false;
+				if (birdFallRate != 0)
+					birdFallRate -= 2;
+				timeCountBirdFallUpdate = 0;
+				positionBirdY -= 15;
+			}
+
+			if (timeCountUpdatePipes++ == pipesUpdateRate) {
+
+				if (currentTubeCount == 3) {
+					if ((positionPipeX[currentTubeCount] - positionPipeX[currentTubeCount - 1]) >= distanceBetweenPipes && !flagDrawPipes[currentTubeCount]) {
+						flagDrawPipes[currentTubeCount] = true;
+						currentTubeCount = 0;
+					}
+				} else {
+					if (currentTubeCount == 0) {
+						if ((positionPipeX[currentTubeCount] - positionPipeX[3]) >= distanceBetweenPipes && !flagDrawPipes[currentTubeCount] || firstTime) {
+							firstTime = false;
+							flagDrawPipes[currentTubeCount] = true;
+							currentTubeCount++;
+						}
+					} else if (positionPipeX[currentTubeCount] - (positionPipeX[currentTubeCount - 1]) >= distanceBetweenPipes && !flagDrawPipes[currentTubeCount]) {
+						flagDrawPipes[currentTubeCount] = true;
+						currentTubeCount++;
+					}
+				}
+
+				for (int i = 0; i < positionPipeX.length; i++) {
+					if (flagDrawPipes[i]) {
+						if (positionPipeX[i] < -pipesUp[i].getWidth()) {
+							flagDrawPipes[i] = false;
+							resetPipe();
+						} else
+							positionPipeX[i] -= 20;
+					}
+				}
+
+				timeCountUpdatePipes = 0;
+			}
+		}else if(!playGame){
+			//TODO mostrar menu
 		}
+		else{
+			batch.draw(gameOver,(widthScreen / 2)-(gameOver.getWidth()/2),(heightScreen / 2)-(gameOver.getHeight()/2));
 
-		if (Gdx.input.justTouched()) {
-			timeCountBirdWingsUpdate=0;
-			timeCountBirdFallUpdate=0;
-			birdFallRate=14;
-			positionBirdY += 40;
-			if (flagChangeImageBird)
-				flagChangeImageBird=false;
-			else
-				flagChangeImageBird=true;
-		}
-
-		if(timeCountBirdWingsUpdate++==20) {
-			flagChangeImageBird=false;
-			timeCountBirdWingsUpdate = 0;
-		}
-
-		if(timeCountBirdFallUpdate++==birdFallRate) {
-			flagChangeImageBird=false;
-			if(birdFallRate!=0)
-				birdFallRate -=2;
-			timeCountBirdFallUpdate=0;
-			positionBirdY -=10;
-		}
-
-		if(timeCountUpdatePipes++==updateRate) {
-
-			if(currentTubeCount==3)
-				currentTubeCount=0;
-			else
-				currentTubeCount++;
-
+            if (Gdx.input.justTouched())
+                resetGame();
 		}
 		batch.end();
+	}
+
+	private void resetPipe(){
+		positionPipeX[currentTubeCount] = widthScreen;
+		int random = new Random().nextInt(((heightScreen-(heightScreen/4))-(heightScreen/2)+1)) + (heightScreen/2);
+		positionBottomPipeY[currentTubeCount] = random-gapBetweenTopBottomPipe-pipeUpHeight;
+		positionTopPipeY[currentTubeCount] = random;
+	}
+
+	private void resetGame(){
+		positionBirdX=(widthScreen / 2)-(bird.getWidth()/2);
+		positionBirdY=(heightScreen / 2)-(bird.getHeight()/2);
+		positionPipeX = new int[]{ widthScreen, widthScreen, widthScreen, widthScreen};
+		positionBottomPipeY = new int[]{ 10, 10, 10, 10};
+		positionTopPipeY = new int[]{ 10, 10, 10, 10};
+
+		collisionBird = new Circle(positionBirdX+birdRadius, positionBirdY+birdRadius, birdRadius);
+		collisionPipeDown= new Rectangle[]{new Rectangle(positionPipeX[0],positionTopPipeY[0], pipeDownWidth, pipeDownHeight),new Rectangle(positionPipeX[1],positionTopPipeY[1], pipeDownWidth, pipeDownHeight),new Rectangle(positionPipeX[3],positionTopPipeY[2], pipeDownWidth, pipeDownHeight),new Rectangle(positionPipeX[3],positionTopPipeY[3], pipeDownWidth, pipeDownHeight)};
+		collisionPipeUp=new Rectangle[]{new Rectangle(positionPipeX[0], positionBottomPipeY[0],pipeUpWidth,pipeUpHeight),new Rectangle(positionPipeX[1], positionBottomPipeY[1],pipeUpWidth,pipeUpHeight),new Rectangle(positionPipeX[2], positionBottomPipeY[2],pipeUpWidth,pipeUpHeight),new Rectangle(positionPipeX[3], positionBottomPipeY[3],pipeUpWidth,pipeUpHeight)};
+
+		timeCountBirdWingsUpdate=0;
+		timeCountBirdFallUpdate=0;
+		timeCountUpdatePipes=0;
+		pipesUpdateRate=7;
+		distanceBetweenPipes=700;
+		gapBetweenTopBottomPipe=500;
+		birdFallRate=14;
+
+		for (int i=0;i<positionPipeX.length;i++) {
+			currentTubeCount=i;
+			resetPipe();
+		}
+		currentTubeCount=0;
+
+		flagDrawPipes=new boolean[]{false,false,false,false};
+		firstTime=true;
+		hasentLose=true;
+		playGame=true;
 	}
 
 	
