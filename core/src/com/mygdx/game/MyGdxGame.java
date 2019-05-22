@@ -11,13 +11,14 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Circle;
 import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector3;
 
 import java.lang.reflect.Type;
 import java.util.Random;
 
 public class MyGdxGame extends ApplicationAdapter {
 	SpriteBatch batch;
-	Texture background,bird, bird2, gameOver;
+	Texture background,bird, bird2, gameOver, btnEasy,btnNormal,btnHard;
 	Texture[] pipesUp, pipesDown;
 	int [] positionPipeX, positionBottomPipeY, positionTopPipeY;
 	int positionBirdX, positionBirdY, timeCountBirdWingsUpdate, timeCountBirdFallUpdate,timeCountUpdatePipes, pipesUpdateRate, birdFallRate, currentTubeCount, distanceBetweenPipes,gapBetweenTopBottomPipe;
@@ -38,14 +39,19 @@ public class MyGdxGame extends ApplicationAdapter {
 		pipesUp = new Texture[]{new Texture("bottomtube.png"), new Texture("bottomtube.png"), new Texture("bottomtube.png"), new Texture("bottomtube.png")};
 		pipesDown = new Texture[]{new Texture("toptube.png"),new Texture("toptube.png"),new Texture("toptube.png"),new Texture("toptube.png")};
 		gameOver= new Texture("game_over.png");
+		btnEasy=new Texture("btneasy.png");
+        btnNormal=new Texture("btnnormal.png");
+        btnHard=new Texture("btnhard.png");
 
 		pipeDownHeight=pipesDown[0].getHeight();
 		pipeDownWidth=pipesUp[0].getWidth();
 		pipeUpHeight=pipesUp[0].getHeight();
 		pipeUpWidth=pipesDown[0].getWidth();
-		birdRadius=bird.getWidth()/2;
+		birdRadius=bird.getWidth()/2-2;
 
-		resetGame();
+		playGame=false;
+		hasentLose=true;
+		//resetGame();
 	}
 
 	@Override
@@ -139,20 +145,37 @@ public class MyGdxGame extends ApplicationAdapter {
 							flagDrawPipes[i] = false;
 							resetPipe();
 						} else
-							positionPipeX[i] -= 20;
+							positionPipeX[i] -= 12;
 					}
 				}
 
 				timeCountUpdatePipes = 0;
 			}
 		}else if(!playGame){
-			//TODO mostrar menu
+			batch.draw(btnEasy, widthScreen/2-btnEasy.getWidth()/2, heightScreen/2-btnEasy.getHeight()/2+200);
+			batch.draw(btnNormal, widthScreen/2-btnNormal.getWidth()/2, heightScreen/2-btnNormal.getHeight()/2);
+			batch.draw(btnHard, widthScreen/2-btnHard.getWidth()/2, heightScreen/2-btnHard.getHeight()/2-200);
+
+			if(Gdx.input.isTouched())
+			{
+				Vector3 touch=new Vector3(Gdx.input.getX(),Gdx.input.getY(),0);
+				Rectangle buttonEasy=new Rectangle(widthScreen/2-btnEasy.getWidth()/2,heightScreen/2-btnEasy.getHeight()/2-200,btnEasy.getWidth(),btnEasy.getHeight());
+                Rectangle buttonNormal=new Rectangle(widthScreen/2-btnEasy.getWidth()/2,heightScreen/2-btnEasy.getHeight()/2,btnEasy.getWidth(),btnEasy.getHeight());
+                Rectangle buttonHard=new Rectangle(widthScreen/2-btnEasy.getWidth()/2,heightScreen/2-btnEasy.getHeight()/2+200,btnEasy.getWidth(),btnEasy.getHeight());
+				
+				if(buttonEasy.contains(touch.x,touch.y))
+					resetGame(5,700,500);
+				else if(buttonNormal.contains(touch.x,touch.y))
+                    resetGame(2,600,500);
+				else if(buttonHard.contains(touch.x,touch.y))
+                    resetGame(1,500,400);
+			}
 		}
 		else{
 			batch.draw(gameOver,(widthScreen / 2)-(gameOver.getWidth()/2),(heightScreen / 2)-(gameOver.getHeight()/2));
 
             if (Gdx.input.justTouched())
-                resetGame();
+                playGame=false;
 		}
 		batch.end();
 	}
@@ -164,7 +187,7 @@ public class MyGdxGame extends ApplicationAdapter {
 		positionTopPipeY[currentTubeCount] = random;
 	}
 
-	private void resetGame(){
+	private void resetGame(int pPipesUpdateRate,int pDistanceBetweenPipes, int pGapBetweenTopBottomPipe){
 		positionBirdX=(widthScreen / 2)-(bird.getWidth()/2);
 		positionBirdY=(heightScreen / 2)-(bird.getHeight()/2);
 		positionPipeX = new int[]{ widthScreen, widthScreen, widthScreen, widthScreen};
@@ -178,9 +201,9 @@ public class MyGdxGame extends ApplicationAdapter {
 		timeCountBirdWingsUpdate=0;
 		timeCountBirdFallUpdate=0;
 		timeCountUpdatePipes=0;
-		pipesUpdateRate=7;
-		distanceBetweenPipes=700;
-		gapBetweenTopBottomPipe=500;
+		pipesUpdateRate=pPipesUpdateRate;
+		distanceBetweenPipes=pDistanceBetweenPipes;
+		gapBetweenTopBottomPipe=pGapBetweenTopBottomPipe;
 		birdFallRate=14;
 
 		for (int i=0;i<positionPipeX.length;i++) {
