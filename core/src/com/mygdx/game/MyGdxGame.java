@@ -98,7 +98,7 @@ public class MyGdxGame extends ApplicationAdapter {
 			if (Gdx.input.justTouched()) {
 				timeCountBirdWingsUpdate = 0;
 				timeCountBirdFallUpdate = 0;
-				birdFallRate = 14;
+				birdFallRate = 30;
 				positionBirdY += 65;
 				if (flagChangeImageBird)
 					flagChangeImageBird = false;
@@ -111,12 +111,13 @@ public class MyGdxGame extends ApplicationAdapter {
 				timeCountBirdWingsUpdate = 0;
 			}
 
-			if (timeCountBirdFallUpdate++ == birdFallRate) {
+			if (birdFallRate != 0)
+				birdFallRate -= 0.1;
+
+			if (timeCountBirdFallUpdate++ >= birdFallRate) {
 				flagChangeImageBird = false;
-				if (birdFallRate != 0)
-					birdFallRate -= 2;
 				timeCountBirdFallUpdate = 0;
-				positionBirdY -= 15;
+				positionBirdY -= 10;
 			}
 
 			if (timeCountUpdatePipes++ == pipesUpdateRate) {
@@ -166,7 +167,7 @@ public class MyGdxGame extends ApplicationAdapter {
 				if(buttonEasy.contains(touch.x,touch.y))
 					resetGame(5,700,500);
 				else if(buttonNormal.contains(touch.x,touch.y))
-                    resetGame(2,600,500);
+                    resetGame(2,600,450);
 				else if(buttonHard.contains(touch.x,touch.y))
                     resetGame(1,500,400);
 			}
@@ -204,7 +205,7 @@ public class MyGdxGame extends ApplicationAdapter {
 		pipesUpdateRate=pPipesUpdateRate;
 		distanceBetweenPipes=pDistanceBetweenPipes;
 		gapBetweenTopBottomPipe=pGapBetweenTopBottomPipe;
-		birdFallRate=14;
+		birdFallRate=30;
 
 		for (int i=0;i<positionPipeX.length;i++) {
 			currentTubeCount=i;
